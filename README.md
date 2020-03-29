@@ -15,6 +15,10 @@ errors.
 go get -u github.com/martinohmann/optional
 ```
 
+## Usage
+
+Check out the [example](example_test.go).
+
 ## License
 
 The source code of optional is released under the MIT License. See the bundled
