@@ -63,32 +63,32 @@ func (o *Optional) Filter(predicate PredicateFunc) *Optional {
 	return Empty()
 }
 
-// FlatMap applies the *Optional-bearing mapper func to the optional value (if
-// present) and returns the resulting *Optional value, otherwise returns an
-// empty *Optional. Panics if the mapper func returns nil or a value which is
-// not of type *Optional.
+// FlatMap applies the mapper func to the optional value (if present) and
+// returns a new *Optional wrapping the result, otherwise returns an empty
+// *Optional. If result itself is already an *Optional, it will not be wrapped
+// again but instead returned as is. Returning a nil *Optional from the mapper
+// func will cause a panic.
 func (o *Optional) FlatMap(mapper MapFunc) *Optional {
 	if o.IsEmpty() {
 		return o
 	}
 
-	value := mapper(o.value)
-	if value == nil {
-		panic("optional.FlatMap: map func returned nil value")
-	}
+	switch val := mapper(o.value).(type) {
+	case *Optional:
+		if val == nil {
+			panic("optional.FlatMap: mapper func returned nil *Optional")
+		}
 
-	opt, ok := value.(*Optional)
-	if !ok {
-		panic(fmt.Sprintf("optional.FlatMap: expected map func to return *Optional, got %T", value))
+		return val
+	default:
+		return OfNilable(val)
 	}
-
-	return opt
 }
 
 // Get returns the optional value if present, otherwise it panics.
 func (o *Optional) Get() interface{} {
 	if o.value == nil {
-		panic("opional.Get: nil value")
+		panic("optional.Get: optional has no value")
 	}
 
 	return o.value
@@ -123,9 +123,8 @@ func (o *Optional) IsPresent() bool {
 	return o.value != nil
 }
 
-// FlatMap applies the mapper func to the optional value (if present) and
-// returns a new *Optional wrapping the result, otherwise returns an empty
-// *Optional.
+// Map applies the mapper func to the optional value (if present) and returns a
+// new *Optional wrapping the result, otherwise returns an empty *Optional.
 func (o *Optional) Map(mapper MapFunc) *Optional {
 	if o.IsEmpty() {
 		return o
@@ -165,30 +164,30 @@ func (o *Optional) OrElseGet(supplier SupplyFunc) interface{} {
 	return supplier()
 }
 
-// OrElsePanic returns the value of the original *Optional if present, otherwise
-// panics. The optional message parameter can be used to provided a custom
-// panic message.
+// OrElsePanic returns the value of the original *Optional if present,
+// otherwise panics. The optional message parameter can be used to provide a
+// custom panic message.
 func (o *Optional) OrElsePanic(message ...string) interface{} {
 	if o.IsPresent() {
 		return o.value
 	}
 
-	msg := "nil value"
+	msg := "optional.OrElsePanic: optional has no value"
 	if len(message) > 0 {
 		msg = message[0]
 	}
 
-	panic(fmt.Sprintf("optional.OrElsePanic: %s", msg))
+	panic(msg)
 }
 
 // Of returns an *Optional describing the given non-nil value. Panics if
 // value is nil.
 func Of(value interface{}) *Optional {
 	if value == nil {
-		panic("optional.Of: nil value")
+		panic("optional.Of: value must not be nil")
 	}
 
-	return &Optional{value: value}
+	return &Optional{value}
 }
 
 // OfNilable returns an *Optional describing the given value if it is non-nil,
