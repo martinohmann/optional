@@ -87,7 +87,7 @@ func (o *Optional) FlatMap(mapper MapFunc) *Optional {
 
 // Get returns the optional value if present, otherwise it panics.
 func (o *Optional) Get() interface{} {
-	if o.value == nil {
+	if o.IsEmpty() {
 		panic("optional.Get: optional has no value")
 	}
 
