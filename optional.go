@@ -1,6 +1,9 @@
 package optional
 
-import "fmt"
+import (
+	"fmt"
+	"reflect"
+)
 
 var emptyOptional = &Optional{}
 
@@ -133,6 +136,26 @@ func (o *Optional) Map(mapper MapFunc) *Optional {
 	return OfNilable(mapper(o.value))
 }
 
+// Of returns an *Optional describing the given non-nil value. Panics if
+// value is nil.
+func Of(value interface{}) *Optional {
+	if isNil(value) {
+		panic("optional.Of: value must not be nil")
+	}
+
+	return &Optional{value}
+}
+
+// OfNilable returns an *Optional describing the given value if it is non-nil,
+// otherwise returns an empty *Optional.
+func OfNilable(value interface{}) *Optional {
+	if isNil(value) {
+		return Empty()
+	}
+
+	return &Optional{value}
+}
+
 // Or returns the original *Optional if a value is present, otherwise returns
 // an *Optional wrapping the result of the supplier func. Panics if the
 // supplier func returns nil.
@@ -180,26 +203,6 @@ func (o *Optional) OrElsePanic(message ...string) interface{} {
 	panic(msg)
 }
 
-// Of returns an *Optional describing the given non-nil value. Panics if
-// value is nil.
-func Of(value interface{}) *Optional {
-	if value == nil {
-		panic("optional.Of: value must not be nil")
-	}
-
-	return &Optional{value}
-}
-
-// OfNilable returns an *Optional describing the given value if it is non-nil,
-// otherwise returns an empty *Optional.
-func OfNilable(value interface{}) *Optional {
-	if value == nil {
-		return Empty()
-	}
-
-	return Of(value)
-}
-
 // String implements fmt.Stringer.
 func (o *Optional) String() string {
 	if o.IsPresent() {
@@ -207,4 +210,18 @@ func (o *Optional) String() string {
 	}
 
 	return "Optional.Empty"
+}
+
+// isNil returns true if value is a typed or untyped nil value.
+func isNil(value interface{}) bool {
+	if value == nil {
+		return true
+	}
+
+	switch reflect.TypeOf(value).Kind() {
+	case reflect.Ptr, reflect.Map, reflect.Array, reflect.Chan, reflect.Slice:
+		return reflect.ValueOf(value).IsNil()
+	default:
+		return false
+	}
 }

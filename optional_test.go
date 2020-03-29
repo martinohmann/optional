@@ -140,6 +140,21 @@ func TestMap(t *testing.T) {
 	assert.Equal(t, Empty(), o4.Map(mapper))
 }
 
+func TestOf_NilPanics(t *testing.T) {
+	assert.Panics(t, func() { Of(nil) })
+	assert.Panics(t, func() {
+		var s *string
+		Of(s)
+	})
+}
+
+func TestOfNilable(t *testing.T) {
+	assert.Equal(t, Empty(), OfNilable(nil))
+
+	var s *string
+	assert.Equal(t, Empty(), OfNilable(s))
+}
+
 func TestOr(t *testing.T) {
 	assert.Equal(t, Of("bar"), Of("bar").Or(func() interface{} { return "foo" }))
 	assert.Equal(t, Of("foo"), Empty().Or(func() interface{} { return "foo" }))
