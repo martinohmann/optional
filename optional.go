@@ -5,6 +5,7 @@ import (
 	"reflect"
 )
 
+// empty is a sentinel value for empty optionals.
 var emptyOptional = &Optional{}
 
 type (
@@ -97,6 +98,13 @@ func (o *Optional) Get() interface{} {
 	return o.value
 }
 
+// GetInto updates dst with the value of the *Optional if present, otherwise it
+// panics. If dst is not a pointer or has a different type than the value
+// wrapped by the *Optional, GetInto will panic as well.
+func (o *Optional) GetInto(dst interface{}) {
+	into(o.Get(), dst)
+}
+
 // IfPresent invokes action with the optional value if it is present.
 func (o *Optional) IfPresent(action ActionFunc) {
 	if o.IsPresent() {
@@ -177,6 +185,13 @@ func (o *Optional) OrElse(other interface{}) interface{} {
 	return other
 }
 
+// OrElseInto updates dst with the value of the *Optional if present, otherwise
+// with the value of other. If dst is not a pointer or has a different type
+// than the value wrapped by the *Optional or other, OrElseInto will panic.
+func (o *Optional) OrElseInto(other, dst interface{}) {
+	into(o.OrElse(other), dst)
+}
+
 // OrElseGet returns the value of the original *Optional if present, otherwise
 // returns the value produced by the supplier func.
 func (o *Optional) OrElseGet(supplier SupplyFunc) interface{} {
@@ -187,20 +202,30 @@ func (o *Optional) OrElseGet(supplier SupplyFunc) interface{} {
 	return supplier()
 }
 
+// OrElseGetInto updates dst with the value of the *Optional if present,
+// otherwise with the value of produced by the supplier func. If dst is not a
+// pointer or has a different type than the value wrapped by the *Optional or
+// other, OrElseGetInto will panic.
+func (o *Optional) OrElseGetInto(supplier SupplyFunc, dst interface{}) {
+	into(o.OrElseGet(supplier), dst)
+}
+
 // OrElsePanic returns the value of the original *Optional if present,
-// otherwise panics. The optional message parameter can be used to provide a
-// custom panic message.
-func (o *Optional) OrElsePanic(message ...string) interface{} {
+// otherwise panics with the given message.
+func (o *Optional) OrElsePanic(message string) interface{} {
 	if o.IsPresent() {
 		return o.value
 	}
 
-	msg := "optional.OrElsePanic: optional has no value"
-	if len(message) > 0 {
-		msg = message[0]
-	}
+	panic(message)
+}
 
-	panic(msg)
+// OrElsePanicInto updates dst with the value of the *Optional if present,
+// otherwise panics with the given message. If dst is not a pointer or has a
+// different type than the value wrapped by the *Optional or other,
+// OrElsePanicInto will panic as well.
+func (o *Optional) OrElsePanicInto(message string, dst interface{}) {
+	into(o.OrElsePanic(message), dst)
 }
 
 // String implements fmt.Stringer.
@@ -224,4 +249,13 @@ func isNil(value interface{}) bool {
 	default:
 		return false
 	}
+}
+
+// into writes the value of src into dst. If dst is not a pointer or has a
+// different type than src, this will panic.
+func into(src, dst interface{}) {
+	dstVal := reflect.Indirect(reflect.ValueOf(dst))
+	srcVal := reflect.ValueOf(src)
+
+	dstVal.Set(srcVal)
 }

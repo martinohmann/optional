@@ -67,6 +67,31 @@ func TestGet(t *testing.T) {
 	assert.Equal(t, "foo", o2.Get())
 }
 
+func TestGetInto(t *testing.T) {
+	assert.Panics(t, func() {
+		var s string
+		Empty().GetInto(&s)
+	})
+
+	var s string
+	Of("foo").GetInto(&s)
+	assert.Equal(t, "foo", s)
+
+	assert.Panics(t, func() {
+		var s string
+		Of("foo").GetInto(s)
+	})
+
+	assert.Panics(t, func() {
+		var i int
+		Of("foo").GetInto(&i)
+	})
+
+	var is []int
+	Of([]int{1, 2, 3}).GetInto(&is)
+	assert.Equal(t, []int{1, 2, 3}, is)
+}
+
 func TestIfPresent(t *testing.T) {
 	o1 := Empty()
 	o2 := Of("foo")
@@ -166,16 +191,38 @@ func TestOrElse(t *testing.T) {
 	assert.Equal(t, "foo", Empty().OrElse("foo"))
 }
 
+func TestOrElseInto(t *testing.T) {
+	var s string
+	Empty().OrElseInto("baz", &s)
+	assert.Equal(t, "baz", s)
+}
+
 func TestOrElseGet(t *testing.T) {
 	assert.Equal(t, "bar", Of("bar").OrElseGet(func() interface{} { return "foo" }))
 	assert.Equal(t, "foo", Empty().OrElseGet(func() interface{} { return "foo" }))
 	assert.Equal(t, nil, Empty().OrElseGet(func() interface{} { return nil }))
 }
 
+func TestOrElseGetInto(t *testing.T) {
+	var s string
+	Empty().OrElseGetInto(func() interface{} { return "baz" }, &s)
+	assert.Equal(t, "baz", s)
+}
+
 func TestOrElsePanic(t *testing.T) {
 	assert.Equal(t, "bar", Of("bar").OrElsePanic("some message"))
-	assert.Panics(t, func() { Empty().OrElsePanic() })
 	assert.Panics(t, func() { Empty().OrElsePanic("some message") })
+}
+
+func TestOrElsePanicInto(t *testing.T) {
+	var s string
+	Of("baz").OrElsePanicInto("some message", &s)
+	assert.Equal(t, "baz", s)
+
+	assert.Panics(t, func() {
+		var s string
+		Empty().OrElsePanicInto("some message", &s)
+	})
 }
 
 func TestString(t *testing.T) {
