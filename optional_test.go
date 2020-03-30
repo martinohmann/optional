@@ -14,17 +14,13 @@ func TestEquals(t *testing.T) {
 }
 
 func TestFilter(t *testing.T) {
-	o1 := Of("foo")
-	o2 := Of("bar")
-	o3 := Empty()
-
 	predicate := func(val interface{}) bool {
 		return val == "bar"
 	}
 
-	assert.Equal(t, Empty(), o1.Filter(predicate))
-	assert.Equal(t, o2, o2.Filter(predicate))
-	assert.Equal(t, Empty(), o3.Filter(predicate))
+	assert.Equal(t, Empty(), Of("foo").Filter(predicate))
+	assert.Equal(t, Of("bar"), Of("bar").Filter(predicate))
+	assert.Equal(t, Empty(), Empty().Filter(predicate))
 }
 
 func TestFlatMap(t *testing.T) {
@@ -44,27 +40,21 @@ func TestFlatMap(t *testing.T) {
 		}
 	}
 
-	o1 := Of("foo")
-	o2 := Of("bar")
-	o3 := Of("baz")
-	o4 := Of("qux")
-	o5 := Empty()
-	o6 := Of("nil-optional")
-
-	assert.Equal(t, Of("bar"), o1.FlatMap(mapper))
-	assert.Equal(t, Empty(), o2.FlatMap(mapper))
-	assert.Equal(t, Of("qux"), o3.FlatMap(mapper))
-	assert.Equal(t, Empty(), o4.FlatMap(mapper))
-	assert.Equal(t, Empty(), o5.FlatMap(mapper))
-	assert.Panics(t, func() { o6.FlatMap(mapper) })
+	assert.Equal(t, Of("bar"), Of("foo").FlatMap(mapper))
+	assert.Equal(t, Empty(), Of("bar").FlatMap(mapper))
+	assert.Equal(t, Of("qux"), Of("baz").FlatMap(mapper))
+	assert.Equal(t, Empty(), Of("qux").FlatMap(mapper))
+	assert.Equal(t, Empty(), Empty().FlatMap(mapper))
+	assert.PanicsWithValue(t, "optional.FlatMap: mapper func returned nil *Optional", func() {
+		Of("nil-optional").FlatMap(mapper)
+	})
 }
 
 func TestGet(t *testing.T) {
-	o1 := Empty()
-	o2 := Of("foo")
-
-	assert.Panics(t, func() { o1.Get() })
-	assert.Equal(t, "foo", o2.Get())
+	assert.Equal(t, "foo", Of("foo").Get())
+	assert.PanicsWithValue(t, "optional.Get: optional has no value", func() {
+		Empty().Get()
+	})
 }
 
 func TestGetInto(t *testing.T) {
@@ -93,9 +83,6 @@ func TestGetInto(t *testing.T) {
 }
 
 func TestIfPresent(t *testing.T) {
-	o1 := Empty()
-	o2 := Of("foo")
-
 	var val interface{}
 	calls := 0
 
@@ -104,20 +91,17 @@ func TestIfPresent(t *testing.T) {
 		val = value
 	}
 
-	o1.IfPresent(action)
+	Empty().IfPresent(action)
 
 	assert.Equal(t, 0, calls)
 
-	o2.IfPresent(action)
+	Of("foo").IfPresent(action)
 
 	assert.Equal(t, 1, calls)
 	assert.Equal(t, "foo", val)
 }
 
 func TestIfPresentOrElse(t *testing.T) {
-	o1 := Empty()
-	o2 := Of("foo")
-
 	var val interface{}
 	calls, emptyCalls := 0, 0
 
@@ -130,12 +114,12 @@ func TestIfPresentOrElse(t *testing.T) {
 		emptyCalls++
 	}
 
-	o1.IfPresentOrElse(action, emptyAction)
+	Empty().IfPresentOrElse(action, emptyAction)
 
 	assert.Equal(t, 0, calls)
 	assert.Equal(t, 1, emptyCalls)
 
-	o2.IfPresentOrElse(action, emptyAction)
+	Of("foo").IfPresentOrElse(action, emptyAction)
 
 	assert.Equal(t, 1, calls)
 	assert.Equal(t, 1, emptyCalls)
@@ -149,25 +133,24 @@ func TestMap(t *testing.T) {
 			return Of("bar")
 		case "bar":
 			return "baz"
+		case "baz":
+			var o *Optional
+			return o
 		default:
 			return nil
 		}
 	}
 
-	o1 := Of("foo")
-	o2 := Of("bar")
-	o3 := Of("baz")
-	o4 := Empty()
-
-	assert.Equal(t, Of(Of("bar")), o1.Map(mapper))
-	assert.Equal(t, Of("baz"), o2.Map(mapper))
-	assert.Equal(t, Empty(), o3.Map(mapper))
-	assert.Equal(t, Empty(), o4.Map(mapper))
+	assert.Equal(t, Of(Of("bar")), Of("foo").Map(mapper))
+	assert.Equal(t, Of("baz"), Of("bar").Map(mapper))
+	assert.Equal(t, Empty(), Of("baz").Map(mapper))
+	assert.Equal(t, Empty(), Of("qux").Map(mapper))
+	assert.Equal(t, Empty(), Empty().Map(mapper))
 }
 
 func TestOf_NilPanics(t *testing.T) {
-	assert.Panics(t, func() { Of(nil) })
-	assert.Panics(t, func() {
+	assert.PanicsWithValue(t, "optional.Of: value must not be nil", func() { Of(nil) })
+	assert.PanicsWithValue(t, "optional.Of: value must not be nil", func() {
 		var s *string
 		Of(s)
 	})
@@ -211,7 +194,11 @@ func TestOrElseGetInto(t *testing.T) {
 
 func TestOrElsePanic(t *testing.T) {
 	assert.Equal(t, "bar", Of("bar").OrElsePanic("some message"))
-	assert.Panics(t, func() { Empty().OrElsePanic("some message") })
+	assert.PanicsWithValue(
+		t,
+		"some message",
+		func() { Empty().OrElsePanic("some message") },
+	)
 }
 
 func TestOrElsePanicInto(t *testing.T) {
@@ -226,6 +213,9 @@ func TestOrElsePanicInto(t *testing.T) {
 }
 
 func TestString(t *testing.T) {
+	v := struct{ name string }{name: "foo"}
+	assert.Equal(t, `Optional(&struct { name string }{name:"foo"})`, Of(&v).String())
 	assert.Equal(t, `Optional("foo")`, Of("foo").String())
+	assert.Equal(t, `Optional(42)`, Of(42).String())
 	assert.Equal(t, `Optional.Empty`, Empty().String())
 }
