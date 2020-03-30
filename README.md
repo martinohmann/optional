@@ -57,6 +57,7 @@ optional.Of(42).
       fmt.Println("optional is empty")
     },
   )
+
 // output:
 // optional has value: 42
 

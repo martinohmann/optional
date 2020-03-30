@@ -19,15 +19,18 @@ func ExampleOptional_Filter() {
 	// bar
 }
 
-func ExampleOptional_Map() {
-	value := optional.Of(42).
-		Map(addTwo).
-		Get()
+func ExampleOptional_FlatMap() {
+	s := "foobar"
 
-	fmt.Println(value)
+	optional.OfNilable(s).
+		FlatMap(func(value interface{}) interface{} {
+			return optional.Of(value.(string) + "baz")
+		}).GetInto(&s)
+
+	fmt.Println(s)
 
 	// output:
-	// 44
+	// foobarbaz
 }
 
 func ExampleOptional_IfPresentOrElse() {
@@ -43,6 +46,17 @@ func ExampleOptional_IfPresentOrElse() {
 
 	// output:
 	// optional has value: 42
+}
+
+func ExampleOptional_Map() {
+	value := optional.Of(42).
+		Map(addTwo).
+		Get()
+
+	fmt.Println(value)
+
+	// output:
+	// 44
 }
 
 func ExampleOptional_OrElseGet() {
