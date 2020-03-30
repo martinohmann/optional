@@ -106,7 +106,7 @@ func (o *Optional) Get() interface{} {
 // panics. If dst is not a pointer or has a different type than the value
 // wrapped by the *Optional, GetInto will panic as well.
 func (o *Optional) GetInto(dst interface{}) {
-	into(o.Get(), dst)
+	into("optional.GetInto", o.Get(), dst)
 }
 
 // IfPresent invokes action with the optional value if it is present.
@@ -193,7 +193,7 @@ func (o *Optional) OrElse(other interface{}) interface{} {
 // with the value of other. If dst is not a pointer or has a different type
 // than the value wrapped by the *Optional or other, OrElseInto will panic.
 func (o *Optional) OrElseInto(other, dst interface{}) {
-	into(o.OrElse(other), dst)
+	into("optional.OrElseInto", o.OrElse(other), dst)
 }
 
 // OrElseGet returns the value of the original *Optional if present, otherwise
@@ -211,7 +211,7 @@ func (o *Optional) OrElseGet(supplier SupplyFunc) interface{} {
 // pointer or has a different type than the value wrapped by the *Optional or
 // other, OrElseGetInto will panic.
 func (o *Optional) OrElseGetInto(supplier SupplyFunc, dst interface{}) {
-	into(o.OrElseGet(supplier), dst)
+	into("optional.OrElseGetInto", o.OrElseGet(supplier), dst)
 }
 
 // OrElsePanic returns the value of the original *Optional if present,
@@ -229,7 +229,7 @@ func (o *Optional) OrElsePanic(message string) interface{} {
 // different type than the value wrapped by the *Optional or other,
 // OrElsePanicInto will panic as well.
 func (o *Optional) OrElsePanicInto(message string, dst interface{}) {
-	into(o.OrElsePanic(message), dst)
+	into("optional.OrElsePanicInto", o.OrElsePanic(message), dst)
 }
 
 // String implements fmt.Stringer.
@@ -257,9 +257,19 @@ func isNil(value interface{}) bool {
 
 // into writes the value of src into dst. If dst is not a pointer or has a
 // different type than src, this will panic.
-func into(src, dst interface{}) {
-	dstVal := reflect.Indirect(reflect.ValueOf(dst))
-	srcVal := reflect.ValueOf(src)
+func into(subject string, src, dst interface{}) {
+	dstPtr := reflect.ValueOf(dst)
+
+	if dstPtr.Kind() != reflect.Ptr {
+		panic(fmt.Sprintf("%s: dst must be a pointer type", subject))
+	}
+
+	dstVal, srcVal := reflect.Indirect(dstPtr), reflect.ValueOf(src)
+	dstType, srcType := dstVal.Type(), srcVal.Type()
+
+	if !srcType.AssignableTo(dstType) {
+		panic(fmt.Sprintf("%s: value of type %s is not assignable to type %s", subject, srcType, dstType))
+	}
 
 	dstVal.Set(srcVal)
 }

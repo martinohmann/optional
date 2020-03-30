@@ -67,12 +67,12 @@ func TestGetInto(t *testing.T) {
 	Of("foo").GetInto(&s)
 	assert.Equal(t, "foo", s)
 
-	assert.Panics(t, func() {
+	assert.PanicsWithValue(t, "optional.GetInto: dst must be a pointer type", func() {
 		var s string
 		Of("foo").GetInto(s)
 	})
 
-	assert.Panics(t, func() {
+	assert.PanicsWithValue(t, "optional.GetInto: value of type string is not assignable to type int", func() {
 		var i int
 		Of("foo").GetInto(&i)
 	})
