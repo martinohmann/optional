@@ -15,9 +15,68 @@ errors.
 go get -u github.com/martinohmann/optional
 ```
 
-## Usage
+## Usage Examples
 
-Check out the [example](example_test.go).
+### Value filtering
+
+
+```go
+value := optional.Of("foo").
+  Filter(filterOutFoo).
+  OrElse("bar")
+
+fmt.Println(value)
+
+// output:
+// bar
+```
+
+### Value mapping
+
+```go
+value := optional.Of(42).
+  Map(addTwo).
+  Get()
+
+fmt.Println(value)
+
+// output:
+// 44
+
+```
+
+### Presence actions
+
+```go
+optional.Of(42).
+  IfPresentOrElse(
+    func(value interface{}) {
+      fmt.Printf("optional has value: %v\n", value)
+    },
+    func() {
+      fmt.Println("optional is empty")
+    },
+  )
+// output:
+// optional has value: 42
+
+```
+
+### Value receiver by reference
+
+```go
+var err error
+
+optional.OfNilable(err).
+  OrElseInto(errors.New("some error"), &err)
+
+fmt.Println(err)
+
+// output:
+// some error
+```
+
+Check out the [`examples_test.go`](examples_test.go) for more usage examples.
 
 ## License
 
