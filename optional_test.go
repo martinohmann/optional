@@ -154,6 +154,10 @@ func TestOf_NilPanics(t *testing.T) {
 		var s *string
 		Of(s)
 	})
+	assert.PanicsWithValue(t, "optional.Of: value must not be nil", func() {
+		var f func()
+		Of(f)
+	})
 }
 
 func TestOfNilable(t *testing.T) {
