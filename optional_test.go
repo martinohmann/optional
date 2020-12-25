@@ -35,6 +35,11 @@ func TestFlatMap(t *testing.T) {
 		case "nil-optional":
 			var o *Optional
 			return o
+		case "ptr-optional":
+			return &Optional{}
+		case "zero-optional":
+			var o Optional
+			return o
 		default:
 			return nil
 		}
@@ -45,6 +50,8 @@ func TestFlatMap(t *testing.T) {
 	assert.Equal(t, Of("qux"), Of("baz").FlatMap(mapper))
 	assert.Equal(t, Empty(), Of("qux").FlatMap(mapper))
 	assert.Equal(t, Empty(), Empty().FlatMap(mapper))
+	assert.Equal(t, Empty(), Of("zero-optional").FlatMap(mapper))
+	assert.Equal(t, Empty(), Of("ptr-optional").FlatMap(mapper))
 	assert.PanicsWithValue(t, "optional.FlatMap: mapper func returned nil *Optional", func() {
 		Of("nil-optional").FlatMap(mapper)
 	})
